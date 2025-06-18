@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Dự đoán cho cá</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .thuoc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+    }
+    .thuoc-card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 8px;
+      background-color: #f9f9f9;
+    }
+    .thuoc-card label {
+      font-weight: 500;
+      font-size: 14px;
+      display: block;
+      margin-bottom: 4px;
+    }
+  </style>
+  
+</head>
+
+<body class="bg-light">
+<div class="container mt-5">
+  <ul class="nav nav-tabs mb-4" id="predictionTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="water-tab" data-bs-toggle="tab" data-bs-target="#water" type="button" role="tab">Dự đoán thay nước</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="feed-tab" data-bs-toggle="tab" data-bs-target="#feed" type="button" role="tab">Dự đoán cho ăn</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="disease-tab" data-bs-toggle="tab" data-bs-target="#disease" type="button" role="tab">Dự đoán dịch bệnh</button>
+    </li>
+    <li class="nav-item" role="presentation">
+  <button class="nav-link" id="harvest-tab" data-bs-toggle="tab" data-bs-target="#harvest" type="button" role="tab">Dự đoán kích thước</button>
+</li>
+<li class="nav-item" role="presentation">
+  <button class="nav-link" id="siphong-tab" data-bs-toggle="tab" data-bs-target="#siphong" type="button" role="tab">Dự đoán si phong</button>
+</li>
+<li class="nav-item" role="presentation">
+  <button class="nav-link" id="medicine-tab" data-bs-toggle="tab" data-bs-target="#medicine" type="button" role="tab">Dự đoán thuốc bệnh</button>
+</li>
+<li class="nav-item" role="presentation">
+  <button class="nav-link" id="harvest-delay-tab" data-bs-toggle="tab" data-bs-target="#harvest-delay" type="button" role="tab">Dự đoán thu hoạch</button>
+</li>
+
+  </ul>
+
+  <div class="tab-content" id="predictionTabsContent">
+    <!-- Thay nước -->
+    <div class="tab-pane fade show active" id="water" role="tabpanel">
+      <div class="card shadow p-4">
+        <h4 class="mb-3">Thông tin thay nước</h4>
+        <form id="waterForm">
+          <div class="row g-3">
+            <div class="col-md-6"><label>Size cá hiện tại (gram)</label><input name="size" type="number" class="form-control" required></div>
+            <div class="col-md-6"><label>Thước nước ban đầu</label><input name="thuocnuoc" type="number" class="form-control" step="any" required></div>
+            <div class="col-md-6"><label>Tuổi cá (ngày)</label><input name="tuoi" type="number" class="form-control" required></div>
+            <div class="col-md-6">
+              <label>Loại thức ăn hôm nay</label>
+              <select name="loaithucan" class="form-select" required>
+                <option value="0">1,5li28</option>
+                <option value="1">2li28</option>
+                <option value="2">4li28</option>
+                <option value="3">6li26</option>
+                <option value="4">6li28</option>
+                <option value="5">8li26</option>
+              </select>
+            </div>
+            
+            <div class="col-md-6"><label>Hôm nay đã cho ăn bao nhiêu (kg)</label><input name="tong_food" type="number" class="form-control" required></div>
+            
+            <div class="col-md-6">
+              <label>Cá có bệnh?</label>
+              <select name="bi_benh" id="bi_benh_water" class="form-select">
+                <option value="0">Không</option>
+                <option value="1">Có</option>
+              </select>
+            </div>
+            <div class="col-md-3 conditional-water d-none"><label>Xây xác</label><input name="xx" type="number" class="form-control"></div>
+            <div class="col-md-3 conditional-water d-none"><label>Xuất huyết</label><input name="xh" type="number" class="form-control"></div>
+            <div class="col-md-3 conditional-water d-none"><label>Gan thận mũ</label><input name="gtm" type="number" class="form-control"></div>
+            <div class="col-md-3 conditional-water d-none"><label>Trắng gan trắng mang</label><input name="tgtm" type="number" class="form-control"></div>
+          </div>
+          <div class="text-center mt-4"><button class="btn btn-primary">Dự đoán</button></div>
+        </form>
+        <div id="resultWater" class="mt-4"></div>
+      </div>
+    </div>
+
+    <!-- Cho ăn -->
+    <div class="tab-pane fade" id="feed" role="tabpanel">
+      <div class="card shadow p-4">
+        <h4 class="mb-3">Thông tin cho ăn</h4>
+        <form id="feedForm">
+          <div class="row g-3">
+            <div class="col-md-6"><label>Size cá hiện tại (gram)</label><input name="size_interp" type="number" class="form-control" required></div>
+            <div class="col-md-6"><label>Size cá ngày đầu tiên thả (gram)</label><input name="size_giong" type="number" class="form-control" required></div>
+            <div class="col-md-6"><label>Sản lượng cá (kg)</label><input name="sanluongca" type="number"  class="form-control" required></div>
+            <div class="col-md-6"><label>Tuổi cá (ngày)</label><input name="tuoi" type="number" class="form-control" required></div>
+            <div class="col-md-6"><label>Tỷ lệ hao hụt (%)</label><input name="tile_hao_hut" type="number" class="form-control" step="any" required></div>
+            <div class="col-md-6"><label>Mật độ (con/m²)</label><input name="matdo" type="number" class="form-control" step="any" required></div>
+            <div class="col-md-6"><label>Số lượng cá</label><input name="soluongca" type="number" class="form-control" required></div>
+            <div class="col-md-6">
+              <label>Diện tích ao (m²)</label>
+              <input name="dien_tich" type="number" class="form-control" min="1" required>
+            </div>
+            
+            <div class="col-md-6">
+              <label>Dự đoán cho mấy ngày tới?</label>
+              <input name="so_ngay_du_doan" type="number" class="form-control" min="1" value="1" required>
+            </div>
+            
+            <div class="col-md-6">
+              <label>Hôm nay có dùng xử lý môi trường không ?</label>
+              <select class="form-select" name="loai_xl" required>
+                <option value="0">Không</option>
+                <option value="1">Có</option>
+                
+              </select>
+            </div>
+            
+            <div class="col-md-6">
+              <label>Cá có bệnh không ?</label>
+              <select name="bi_benh" id="bi_benh_feed" class="form-select">
+                <option value="0">Không</option>
+                <option value="1">Có</option>
+              </select>
+            </div>
+            <div class="col-md-3 conditional-feed d-none"><label>Xây xác</label><input name="xx" type="number" class="form-control" value="0"></div>
+            <div class="col-md-3 conditional-feed d-none"><label>Xuất huyết</label><input name="xh" type="number" class="form-control" value="0"></div>
+            <div class="col-md-3 conditional-feed d-none"><label>Gan thận mũ</label><input name="gtm" type="number" class="form-control" value="0"></div>
+            <div class="col-md-3 conditional-feed d-none"><label>Trắng gan trắng man</label><input name="tgtm" type="number" class="form-control" value="0"></div>
+            <div class="col-12"><label>Hôm nay có dùng thuốc cho ao không ?</label>
+              <select class="form-select" id="useMedicine">
+                <option value="0">Không</option>
+                <option value="1">Có</option>
+              </select>
+            </div>
+            <div id="thuocFields" class="row mt-3 d-none"></div>
+          </div>
+          <div class="text-center mt-4"><button class="btn btn-success">Dự đoán</button></div>
+        </form>
+        <div id="feedResult" class="mt-4"></div>
+      </div>
+    </div>
+    <div class="tab-pane fade" id="disease" role="tabpanel">
+      <div class="card shadow p-4">
+        <h4 class="mb-3">Thông tin dự đoán dịch bệnh</h4>
+        <form id="diseaseForm">
+          <div class="row g-3">
+            <div class="col-md-6"><label>Tuổi cá (ngày)</label><input name="tuoi" type="number" class="form-control" required></div>
+            <div class="col-md-6"><label>Mật độ (con/m²)</label><input name="matdo" type="number" class="form-control" step="any" required></div>
+            <div class="col-md-6"><label>Sản lượng cá (kg)</label><input name="sanluongca" type="number" step="any" class="form-control" required></div>
+            <div class="col-md-6"><label>Tỷ lệ hao hụt (%)</label><input name="tile_hao_hut" type="number" class="form-control" step="any" required></div>
+            <div class="col-md-6"><label>Size cá hiện tại (gram)</label><input name="size" type="number" class="form-control" required></div>
+            <div class="col-md-6"><label>Số lượng cá</label><input name="soluongca" type="number" class="form-control" required></div>
+          </div>
+          <div class="text-center mt-4">
+            <button class="btn btn-danger">Dự đoán</button>
+          </div>
+        </form>
+        <div id="diseaseResult" class="mt-4"></div>
+      </div>
+    </div>
+    <!-- Dự đoán thu hoạch -->
+<div class="tab-pane fade" id="harvest" role="tabpanel">
+  <div class="card shadow p-4">
+    <h4 class="mb-3">Thông tin dự đoán kích thước </h4>
+    <form id="harvestForm">
+      <div class="row g-3">
+        <div class="col-md-6"><label>Tuổi cá hiện tại (ngày)</label><input name="tuoi_hientai" type="number" class="form-control" required></div>
+        <div class="col-md-6"><label>Tổng lượng thức ăn đã cho (kg)</label><input name="tong_food" type="number" class="form-control" required></div>
+        
+        <div class="col-md-6"><label>Tỷ lệ hao hụt hiện tại (%)</label><input name="tile_haohut" type="number" class="form-control" step="any" required></div>
+        <div class="col-md-6"><label>Size cá ngày đầu tiên thả (gram)</label><input name="size_giong" type="number" class="form-control" required></div>
+        <div class="col-md-6"><label>Size cá cần đạt (gram)</label><input name="target_size" type="number" class="form-control" required></div>
+        <div class="col-md-6"><label>Số lượng cá</label><input name="soluongca" type="number" class="form-control" required></div>
+        <div class="col-md-6">
+          <label>Diện tích ao (m²)</label>
+          <input name="dien_tich" type="number" class="form-control" min="1" required>
+        </div>
+        
+        <div class="col-md-6">
+          <label>Cá có bệnh không?</label>
+          <select class="form-select" id="bi_benh_harvest" name="bi_benh">
+            <option value="0">Không</option>
+            <option value="1">Có</option>
+          </select>
+        </div>
+
+        <!-- Chỉ hiện khi có bệnh -->
+        <div class="col-md-3 conditional-harvest d-none"><label>Gan thận mủ (gtm)</label><input class="form-control" name="gtm" type="number" value="0"></div>
+        <div class="col-md-3 conditional-harvest d-none"><label>Trắng gan trắng mang (tgtm)</label><input class="form-control" name="tgtm" type="number" value="0"></div>
+        <div class="col-md-3 conditional-harvest d-none"><label>Xuất huyết (xh)</label><input class="form-control" name="xh" type="number" value="0"></div>
+        <div class="col-md-3 conditional-harvest d-none"><label>Xây xát (xx)</label><input class="form-control" name="xx" type="number" value="0"></div>
+      </div>
+      <div class="text-center mt-4">
+        <button class="btn btn-warning">Dự đoán</button>
+      </div>
+    </form>
+    <div id="harvestResult" class="mt-4"></div>
+  </div>
+</div>
+<!-- Dự đoán siphong -->
+<div class="tab-pane fade" id="siphong" role="tabpanel">
+  <div class="card shadow p-4">
+    <h4 class="mb-3">Thông tin dự đoán siphong</h4>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label>Tổng lượng thức ăn ngày siphong gần nhất (kg)</label>
+        <input type="number" step="any" class="form-control" id="foodLast">
+      </div>
+      <div class="col-md-6">
+        <label>Tổng lượng thức ăn đến hôm nay (kg)</label>
+        <input type="number" step="any" class="form-control" id="foodToday">
+      </div>
+    </div>
+    <div id="siphongResult" class="mt-4"></div>
+  </div>
+</div>
+<!-- Cấp thuốc -->
+<div class="tab-pane fade" id="medicine" role="tabpanel">
+  <div class="card shadow p-4">
+    <h4 class="mb-3">Thông tin cấp thuốc</h4>
+    <form id="medicineForm">
+      <div class="row g-3">
+        <div class="col-md-6"><label>Tuổi cá (ngày)</label><input name="tuoi" type="number" class="form-control" required></div>
+        <div class="col-md-6"><label>Mật độ (con/m²)</label><input name="matdo" type="number" step="any" class="form-control" required></div>
+        <div class="col-md-6"><label>Tỉ lệ hao hụt (%)</label><input name="tile_hao_hut" type="number" step="any" class="form-control" required></div>
+        
+        <div class="col-md-6">
+          <label>Hôm nay có xử lý môi trường?</label>
+          <select name="loai_xl" class="form-select" required>
+            <option value="1">Có</option>
+            <option value="0" selected>Không</option>
+          </select>
+        </div>
+        
+        <div class="col-md-6"><label>Size cá hiện tại (gram)</label><input name="size" type="number" class="form-control" required></div>
+    
+        <div class="col-md-6">
+          <label>Xuất huyết</label>
+          <select name="xh" class="form-select" required>
+            <option value="1">Có</option>
+            <option value="0" selected>Không</option>
+          </select>
+        </div>
+    
+        <div class="col-md-6">
+          <label>Gan thận mủ</label>
+          <select name="gtm" class="form-select" required>
+            <option value="1">Có</option>
+            <option value="0" selected>Không</option>
+          </select>
+        </div>
+    
+        <div class="col-md-6">
+          <label>Trắng gan trắng mang</label>
+          <select name="tgtm" class="form-select" required>
+            <option value="1">Có</option>
+            <option value="0" selected>Không</option>
+          </select>
+        </div>
+    
+        <div class="col-md-6"><label>Tổng lượng thức ăn hôm nay (kg)</label><input name="tong_food_ngay" type="number" class="form-control" required></div>
+        <div class="col-md-6"><label>Sản lượng (kg)</label><input name="sanluong_kg" type="number" class="form-control" required></div>
+        <div class="col-md-6"><label>Diện tích ao (m²)</label><input name="the_tich" type="number" class="form-control" required></div>
+      </div>
+    
+      <div class="text-center mt-4">
+        <button class="btn btn-dark">Gợi ý thuốc</button>
+      </div>
+    </form>
+    
+    
+    <div id="medicineResult" class="mt-4"></div>
+  </div>
+</div>
+<div class="tab-pane fade" id="harvest-delay" role="tabpanel">
+  <div class="card shadow p-4">
+    <h4 class="mb-3">Dự đoán số ngày cần nuôi thêm</h4>
+    <form id="harvestDelayForm">
+      <div class="row g-3">
+        <div class="col-md-6"><label>Tổng lượng thức ăn (kg)</label><input name="tong_food" type="number" class="form-control" required></div>
+        <div class="col-md-6"><label>Mật độ (con/m²)</label><input name="matdo" type="number" class="form-control" step="any" required></div>
+        <div class="col-md-6"><label>Tỷ lệ hao hụt (%)</label><input name="tile_hao_hut" type="number" class="form-control" step="any" required></div>
+        <div class="col-md-6"><label>Size cá ngày đầu tiên thả (gram)</label><input name="size_giong" type="number" class="form-control" required></div>
+        <div class="col-md-6"><label>Size cá hiện tại (gram)</label><input name="size_interp" type="number" class="form-control" required></div>
+        <div class="col-md-6">
+          <label>Số lượng cá</label>
+          <input name="soluongca" type="number" class="form-control" required>
+        </div>
+        
+        <div class="col-md-6">
+          <label>Cá có bệnh không?</label>
+          <select class="form-select" id="bi_benh_delay" name="bi_benh">
+            <option value="0" selected>Không</option>
+            <option value="1">Có</option>
+          </select>
+        </div>
+        
+        <!-- Hiện khi có bệnh -->
+        <div class="col-md-3 conditional-delay d-none"><label>Gan thận mủ (gtm)</label><input class="form-control" name="gtm" type="number" value="0"></div>
+        <div class="col-md-3 conditional-delay d-none"><label>Xuất huyết (xh)</label><input class="form-control" name="xh" type="number" value="0"></div>
+        <div class="col-md-3 conditional-delay d-none"><label>Xây xát (xx)</label><input class="form-control" name="xx" type="number" value="0"></div>
+        <input type="hidden" name="ck" id="ck_input" value="1">
+        
+        <div class="col-md-6"><label>Size mục tiêu (g)</label><input name="target_size" type="number" class="form-control" value="1400"></div>
+      </div>
+      <div class="text-center mt-4">
+        <button class="btn btn-outline-primary">Dự đoán</button>
+      </div>
+    </form>
+    <div id="harvestDelayResult" class="mt-4"></div>
+  </div>
+</div>
+
+  </div>
+</div>
+<!-- Dự đoán dịch bệnh -->
+
+
+<script>
+let thuocList = [];
+
+async function loadThuocList() {
+  const res = await fetch("/thucan/get_thuoc_list");  // nhớ sửa path nếu dùng prefix
+  const data = await res.json();
+  thuocList = data.thuoc || [];
+
+  const thuocFields = document.getElementById("thuocFields");
+  thuocFields.innerHTML = "";
+  thuocFields.classList.add("thuoc-grid");
+
+  thuocList.forEach((name, idx) => {
+    const div = document.createElement("div");
+    div.className = "thuoc-card";
+    div.innerHTML = `
+      <label>${name}</label>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="thuoc_${idx}" value="1" id="thuoc_${idx}_yes">
+        <label class="form-check-label me-2" for="thuoc_${idx}_yes">Có</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="thuoc_${idx}" value="0" id="thuoc_${idx}_no" checked>
+        <label class="form-check-label" for="thuoc_${idx}_no">Không</label>
+      </div>`;
+    thuocFields.appendChild(div);
+  });
+}
+
+
+document.getElementById("bi_benh_water").addEventListener("change", function () {
+  document.querySelectorAll(".conditional-water").forEach(el => {
+    el.classList.toggle("d-none", this.value !== "1");
+  });
+});
+
+document.getElementById("bi_benh_feed").addEventListener("change", function () {
+  document.querySelectorAll(".conditional-feed").forEach(el => {
+    el.classList.toggle("d-none", this.value !== "1");
+  });
+});
+
+document.getElementById("useMedicine").addEventListener("change", function () {
+  document.getElementById("thuocFields").classList.toggle("d-none", this.value !== "1");
+});
+
+document.getElementById("waterForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const form = new FormData(this);
+  const data = Object.fromEntries(form.entries());
+  for (let key in data) data[key] = parseFloat(data[key]) || 0;
+
+  const res = await fetch("/thaynuoc/predict/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  const result = await res.json();
+
+  let html = `<h5>Kết quả: ${result.phan_loai}</h5>`;
+  
+  if (result.gio) {
+    result.gio.forEach(gio_text => {
+      html += `<p><strong>Thời điểm thay nước:</strong> ${gio_text}</p>`;
+    });
+  }
+
+  if (result.bien_do) {
+    result.bien_do.forEach(item => {
+      html += `<p>${item.dot}: ${item.bien_do_cm} cm - ${item.ty_le_thay ?? "?"}%</p>`;
+    });
+  }
+
+  document.getElementById("resultWater").innerHTML = html;
+});
+
+
+document.getElementById("feedForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const form = new FormData(this);
+  const data = Object.fromEntries(form.entries());
+  for (let key in data) data[key] = parseFloat(data[key]) || 0;
+  const thuoc = [];
+  for (let i = 0; i < thuocList.length; i++) {
+    const val = document.querySelector(`input[name="thuoc_${i}"]:checked`);
+    thuoc.push(val ? parseInt(val.value) : 0);
+  }
+  data["thuoc"] = thuoc;
+
+  const so_ngay = parseInt(data["so_ngay_du_doan"] || 1);
+
+  const res = await fetch("/thucan/predict_feed/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  const result = await res.json();
+  let html = "";
+
+  if (result.error) html = `<div class="alert alert-danger">${result.error}</div>`;
+  else if (result.message) html = `<div class="alert alert-warning">${result.message}</div>`;
+  else if (result.du_doan_nhieu_ngay && so_ngay > 1) {
+    html += `<h5 class="mb-3">Kết quả dự đoán cho nhiều ngày</h5>
+    <div class="table-responsive"><table class="table table-bordered align-middle"><thead>
+      <tr>
+        <th>Ngày</th>
+        <th>Tuổi cá</th>
+        <th>Size</th>
+        <th>Số lượng cá</th>
+        <th>Mật độ</th>
+        <th>Sản lượng cá</th>
+        <th>Tỉ lệ hao hụt (%)</th>
+        <th>Loại cho ăn</th>
+        <th>Loại thức ăn</th>
+        <th>Sáng (kg)</th>
+        <th>Chiều (kg)</th>
+        <th>Tổng (kg)</th>
+      </tr></thead><tbody>`;
+    result.du_doan_nhieu_ngay.forEach(row => {
+      html += `<tr>
+        <td>${row.ngay}</td>
+        <td>${row.tuoi}</td>
+        <td>${row.size ? row.size.toFixed(2) : ""}</td>
+        <td>${row.soluongca ? Math.round(row.soluongca) : ""}</td>
+        <td>${row.matdo ? row.matdo.toFixed(2) : ""}</td>
+        <td>${row.sanluongca ? row.sanluongca.toFixed(2) : ""}</td>
+        <td>${row.tile_hao_hut !== undefined ? row.tile_hao_hut.toFixed(2) : ""}</td>
+        <td>${row.loai_cho_an ?? ""}</td>
+        <td>${row.loai_thuc_an ?? ""}</td>
+        <td>${row.sang !== undefined ? row.sang : ""}</td>
+        <td>${row.chieu !== undefined ? row.chieu : ""}</td>
+        <td>${row.tong !== undefined ? row.tong : ((row.sang || 0) + (row.chieu || 0)).toFixed(2)}</td>
+      </tr>`;
+    });
+    html += "</tbody></table></div>";
+  }
+  else {
+    // Kết quả cho 1 ngày (giữ nguyên như hiện tại)
+    html += `<h5>Loại cho ăn: ${result.loai_cho_an}</h5>`;
+    if (result.loai_thuc_an)
+      html += `<p><strong>Loại thức ăn đề xuất:</strong> ${result.loai_thuc_an}</p>`;
+    if (result.sang) html += `<p>Sáng: ${result.sang} kg</p>`;
+    if (result.chieu) html += `<p>Chiều: ${result.chieu} kg</p>`;
+    if (result.tong) html += `<p><strong>Tổng: ${result.tong} kg</strong></p>`;
+  }
+  document.getElementById("feedResult").innerHTML = html;
+});
+
+document.addEventListener("DOMContentLoaded", loadThuocList);
+document.getElementById("diseaseForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const form = new FormData(this);
+  const data = Object.fromEntries(form.entries());
+  for (const key in data) data[key] = parseFloat(data[key]) || 0;
+
+  const res = await fetch("/dichbenh/predict_dich_benh", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+
+  const result = await res.json();
+  const output = result.ket_qua;
+
+  let html = "<h5>Kết quả dự đoán:</h5><ul class='list-group mt-2'>";
+  output.forEach(b => {
+    html += `<li class="list-group-item">${b}</li>`;
+  });
+  html += "</ul>";
+  document.getElementById("diseaseResult").innerHTML = html;
+});
+// Hiện/ẩn field bệnh trong form thu hoạch
+document.getElementById("bi_benh_harvest").addEventListener("change", function () {
+  document.querySelectorAll(".conditional-harvest").forEach(el => {
+    el.classList.toggle("d-none", this.value !== "1");
+  });
+});
+
+// Submit form thu hoạch
+document.getElementById("harvestForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const form = new FormData(this);
+  const data = Object.fromEntries(form.entries());
+
+  // Ép kiểu số
+  for (const key in data) data[key] = parseFloat(data[key]) || 0;
+
+  const res = await fetch("/thuhoach/predict_thu_hoach", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+
+  const result = await res.json();
+  let html = "";
+
+  if (result.days_can_dat_target !== null) {
+  html = `
+    <div class="alert alert-success">
+      <p><strong>Size hiện tại:</strong> ${result.size_hientai} cm</p>
+      <p><strong>Size mục tiêu:</strong> ${result.target_size} cm</p>
+      <p><strong>Khoảng:</strong> ${result.days_can_dat_target} ngày nữa cá sẽ đạt size mong muốn</p>
+      <p><strong>Mật độ cuối:</strong> ${result.matdo_cuoicung} con/m²</p>
+      <p><strong>Ước lượng số lượng cá còn lại:</strong> ${result.soluongca_cuoicung} con</p>
+      <p><strong>Sản lượng cá:</strong> ${result.sanluong_thu_hoach} kg</p>
+    </div>
+  `;
+}
+ else {
+    html = `
+      <div class="alert alert-warning">
+        <strong>${result.message}</strong>
+        <p>(Size hiện tại: ${result.size_hientai} cm)</p>
+      </div>
+    `;
+  }
+
+  document.getElementById("harvestResult").innerHTML = html;
+});
+function updateSiphongStatus() {
+  const foodLast = parseFloat(document.getElementById("foodLast").value);
+  const foodToday = parseFloat(document.getElementById("foodToday").value);
+  const result = document.getElementById("siphongResult");
+
+  if (isNaN(foodLast) || isNaN(foodToday)) {
+    result.innerHTML = "";
+    return;
+  }
+
+  const siphongRatio = (foodToday - foodLast) / 4300;
+  const percent = (siphongRatio * 1).toFixed(2);
+
+  if (siphongRatio >= 4.2) {
+    result.innerHTML = `
+      <div class="alert alert-danger">
+        <strong>% siphong hiện tại:</strong> ${percent}%<br>
+        <strong>Cảnh báo:</strong> Cần tiến hành siphong ngay!
+      </div>`;
+  } else {
+    result.innerHTML = `
+      <div class="alert alert-success">
+        <strong>% siphong hiện tại:</strong> ${percent}%<br>
+        Chưa cần siphong.
+      </div>`;
+  }
+}
+
+document.getElementById("foodLast").addEventListener("input", updateSiphongStatus);
+document.getElementById("foodToday").addEventListener("input", updateSiphongStatus);
+document.getElementById("medicineForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const form = new FormData(this);
+  const data = Object.fromEntries(form.entries());
+
+  // Chuyển kiểu dữ liệu
+  for (const key in data) data[key] = parseFloat(data[key]) || 0;
+  data.xx = 0;
+  data.ck = 0;
+
+  data.the_tich = parseFloat(data.the_tich) || 0;
+  const res = await fetch("/capthuoc/predict_thuoc/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+
+  const result = await res.json();
+  let html = "";
+
+  if (result.thuoc_goi_y && result.thuoc_goi_y.length) {
+    html += `<h5>Gợi ý thuốc:</h5><ul class="list-group mb-3">`;
+    result.thuoc_goi_y.forEach(th => {
+      const dosage = result.lieu_luong[th] || "Không rõ";
+      html += `<li class="list-group-item"><strong>${th}:</strong> ${dosage}</li>`;
+    });
+    if (result.thuoc_goi_y.includes("yucca")) {
+  html += `<div class="alert alert-info mt-3">Lưu ý: Thuốc <strong>yucca</strong> cần tính theo thể tích nước. Vui lòng đảm bảo đã nhập thể tích nước (m³).</div>`;
+  }
+    html += "</ul>";
+  } else {
+    html += `<div class="alert alert-info">Không có thuốc được đề xuất.</div>`;
+  }
+
+  // Chi tiết dự đoán
+  html += `<details><summary>Chi tiết dự đoán</summary><table class="table table-sm mt-2"><thead><tr>
+            <th>Thuốc</th><th>Dự đoán</th><th>Xác suất</th><th>Ngưỡng</th>
+          </tr></thead><tbody>`;
+  result.bang_chi_tiet.forEach(row => {
+    html += `<tr>
+      <td>${row.thuoc}</td>
+      <td>${row.du_doan}</td>
+      <td>${row.xac_suat}</td>
+      <td>${row.threshold}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></details>`;
+
+  document.getElementById("medicineResult").innerHTML = html;
+});
+document.getElementById("harvestDelayForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const form = new FormData(this);
+  const data = Object.fromEntries(form.entries());
+  for (const key in data) data[key] = parseFloat(data[key]) || 0;
+
+  const res = await fetch("/thuhoachlui/predict_thu_hoach_lui/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+
+  const result = await res.json();
+  let html = "";
+
+  if (result.du_doan_so_ngay_con_lai != null) {
+    // Tính số lượng cá còn lại sau hao hụt
+    const soluongca_cuoicung = data.soluongca * Math.pow(0.9995, result.du_doan_so_ngay_con_lai);
+    const sanluong = soluongca_cuoicung * result.thong_tin_dau_vao.target_size / 1000;
+
+    html = `
+      <div class="alert alert-success">
+        <p><strong>Số ngày cần nuôi thêm:</strong> ${result.du_doan_so_ngay_con_lai} ngày</p>
+        <p><strong>Size mục tiêu:</strong> ${result.thong_tin_dau_vao.target_size}g</p>
+        <p><strong>Số lượng cá cuối cùng (ước tính):</strong> ${Math.round(soluongca_cuoicung)} con</p>
+        <p><strong>Sản lượng ước tính:</strong> ${sanluong.toFixed(2)} kg</p>
+      </div>`;
+  } else {
+    html = `<div class="alert alert-danger">Không thể dự đoán. Vui lòng kiểm tra lại dữ liệu.</div>`;
+  }
+
+  document.getElementById("harvestDelayResult").innerHTML = html;
+});
+
+document.getElementById("bi_benh_delay").addEventListener("change", function () {
+  const show = this.value === "1";
+  document.querySelectorAll(".conditional-delay").forEach(el => {
+    el.classList.toggle("d-none", !show);
+  });
+  document.getElementById("ck_input").value = show ? "0" : "1";
+});
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
