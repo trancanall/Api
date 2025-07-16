@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Chatbot Thủy Sản Nhập Liệu Ngay Trong Chat</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+  <style>
+    body { background: #f6f8fa; }
+    #chatbox { width: 420px; margin: 42px auto; background: #fff; border-radius: 14px; box-shadow: 0 2px 14px #0001; padding: 24px 20px 10px 20px;}
+    .msg-list { max-height: 440px; overflow-y: auto; margin-bottom: 8px;}
+    .msg { display: flex; gap: 9px; margin: 18px 0; align-items: flex-end; }
+    .bot { background: #f0f6fd; color: #1858ab; border-radius: 16px 16px 16px 2px; padding: 12px 15px; font-size: 15.5px; min-width: 40px; max-width: 80%; position: relative;}
+    .user { background: #eaf5e7; color: #1a4316; border-radius: 16px 16px 2px 16px; padding: 12px 15px; margin-left: auto; font-size: 15.5px; min-width: 40px; max-width: 80%; }
+    .avatar-bot { width: 36px; height: 36px; display: flex; align-items: center; border-radius: 50%; overflow: hidden; background: #fff; margin-right: 2px; }
+    .avatar-user { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: #b2d9a4; border-radius: 50%; font-weight: bold; color: #165a27; font-size: 21px; margin-left: 7px; }
+    .bot-choices button { margin: 0 7px 7px 0; }
+    #inputArea { display: flex; }
+    #userInput { flex: 1; padding: 7px 10px; border-radius: 7px; border: 1px solid #bbb; }
+    #sendBtn { background: #2296f3; color: #fff; border: none; padding: 7px 22px; margin-left: 8px; border-radius: 7px; cursor: pointer; }
+    #sendBtn:active { background: #1976d2; }
+    .msg-list::-webkit-scrollbar { width: 6px; background: #eee; }
+    .msg-list::-webkit-scrollbar-thumb { background: #d3d5dc; border-radius: 4px; }
+    .inline-form { background: #fff; border-radius: 10px; border: 1.5px solid #d5e6f8; padding: 18px 14px 12px 14px; margin: 10px 0 0 0;}
+    .inline-form label { font-weight: 500; font-size: 14px; margin-bottom: 4px;}
+    .inline-form input, .inline-form select { margin-bottom: 12px;}
+    .inline-form .form-actions { text-align: right; }
+    .lottie-loader { display: inline-block; vertical-align: middle; width: 30px; height: 30px;}
+    .bot .form-result { border-top: 1px dashed #6b9edb; margin-top: 16px; padding-top: 10px; }
+    @media (max-width: 500px) { #chatbox { width: 99vw; } }
+  </style>
+</head>
+<body>
+<div id="chatbox">
+  <div class="msg-list" id="msgList"></div>
+  <div id="inputArea">
+    <input id="userInput" autocomplete="off" placeholder="Nhập câu hỏi, ví dụ: thay nước, cho ăn..."/>
+    <button id="sendBtn">Gửi</button>
+  </div>
+</div>
+
+<!-- Lottie avatar/loader template -->
+<template id="lottie-bot">
+  <lottie-player
+    src="https://lottie.host/b800be70-2f03-45c8-b3d0-d2b8d1c0fbbb/S02V9jVv7D.json"
+    background="transparent" speed="1" style="width: 36px; height: 36px;" loop autoplay>
+  </lottie-player>
+</template>
+<template id="lottie-thinking">
+  <lottie-player
+    src="https://lottie.host/f70d33aa-5d5e-45c9-87bb-239f6cda0d2b/GV4TgfY68e.json"
+    background="transparent" speed="1" style="width: 30px; height: 30px;" loop autoplay>
+  </lottie-player>
+</template>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const MODS = [
+    { key: "thaynuoc", label: "Dự đoán thay nước" },
+    { key: "feed",     label: "Dự đoán cho ăn" },
+    { key: "dichbenh", label: "Dự đoán dịch bệnh (sắp có)" }
+  ];
+  const msgList = document.getElementById('msgList');
+  
+  function botSay(msg, html=false) {
+    const row = document.createElement('div');
+    row.className = 'msg';
+    const av = document.createElement('span');
+    av.className = 'avatar-bot';
+    av.innerHTML = document.getElementById('lottie-bot').innerHTML;
+    row.appendChild(av);
+    const box = document.createElement('div');
+    box.className = 'bot';
+    html ? box.innerHTML = msg : box.innerText = msg;
+    row.appendChild(box);
+    msgList.appendChild(row);
+    msgList.scrollTop = msgList.scrollHeight;
+  }
+  function userSay(msg) {
+    const row = document.createElement('div');
+    row.className = 'msg';
+    const box = document.createElement('div');
+    box.className = 'user';
+    box.innerText = msg;
+    row.appendChild(box);
+    const av = document.createElement('span');
+    av.className = 'avatar-user';
+    av.innerText = "B";
+    row.appendChild(av);
+    msgList.appendChild(row);
+    msgList.scrollTop = msgList.scrollHeight;
+  }
+  function botShowMenu() {
+    let html = '<div class="bot-choices">';
+    MODS.forEach(mod => {
+      html += `<button class="btn btn-outline-primary btn-sm" onclick="selectModule('${mod.key}')" type="button">${mod.label}</button>`;
+    });
+    html += '</div>';
+    botSay(html, true);
+  }
+  window.selectModule = function(key) {
+    if (key === "thaynuoc") {
+      botSay("Bạn đã chọn <b>Dự đoán thay nước</b>. Vui lòng nhập thông tin bên dưới:");
+      renderInlineThayNuocForm();
+    } else if (key === "feed") {
+      botSay("Bạn đã chọn <b>Dự đoán cho ăn</b>. Vui lòng nhập thông tin bên dưới:");
+      renderInlineFeedForm();
+    } else {
+      botSay("Tính năng đang phát triển. Hãy thử các chức năng đã có nhé!");
+    }
+  };
+  
+  // --------- FORM DỰ ĐOÁN CHO ĂN NGAY TRONG CHAT ----------
+  function renderInlineFeedForm() {
+    const row = document.createElement('div');
+    row.className = 'msg';
+    row.style.position = "relative";
+    // Avatar bot
+    const av = document.createElement('span');
+    av.className = 'avatar-bot';
+    av.innerHTML = document.getElementById('lottie-bot').innerHTML;
+    row.appendChild(av);
+  
+    // Form nhập liệu
+    const formWrap = document.createElement('div');
+    formWrap.className = 'bot';
+    formWrap.innerHTML = `
+      <form class="inline-form" id="inlineFormFeed">
+        <div>
+          <label>Size cá hiện tại (gram)</label>
+          <input name="size_interp" type="number" class="form-control" required>
+        </div>
+        <div>
+          <label>Size cá ngày đầu tiên thả (gram)</label>
+          <input name="size_giong" type="number" class="form-control" required>
+        </div>
+        <div>
+          <label>Tuổi cá (ngày)</label>
+          <input name="tuoi" type="number" class="form-control" required>
+        </div>
+        <div>
+          <label>Tỷ lệ hao hụt (%)</label>
+          <input name="tile_hao_hut" type="number" class="form-control" required>
+        </div>
+        <div>
+          <label>Số lượng cá</label>
+          <input name="soluongca" type="number" class="form-control" required>
+        </div>
+        <div>
+          <label>Diện tích ao (m²)</label>
+          <input name="dien_tich" type="number" class="form-control" required>
+        </div>
+        <div>
+          <label>Dự đoán cho mấy ngày tới?</label>
+          <input name="so_ngay_du_doan" type="number" class="form-control" value="1" required>
+        </div>
+        <div>
+          <label>Cá có bệnh không?</label>
+          <select name="bi_benh" class="form-select" id="bi_benh_feed_inline">
+            <option value="0">Không</option>
+            <option value="1">Có</option>
+          </select>
+        </div>
+        <div id="benhFieldsFeedInline" style="display: none;">
+          <div><label>Xây xát</label><input name="xx" type="number" class="form-control" value="0"></div>
+          <div><label>Xuất huyết</label><input name="xh" type="number" class="form-control" value="0"></div>
+          <div><label>Gan thận mủ</label><input name="gtm" type="number" class="form-control" value="0"></div>
+          <div><label>Trắng gan trắng mang</label><input name="tgtm" type="number" class="form-control" value="0"></div>
+        </div>
+        <div class="form-actions mt-2">
+          <button class="btn btn-success btn-sm" type="submit">Dự đoán</button>
+        </div>
+      </form>
+    `;
+    row.appendChild(formWrap);
+    msgList.appendChild(row);
+    msgList.scrollTop = msgList.scrollHeight;
+  
+    // Show fields bệnh nếu cần
+    formWrap.querySelector("#bi_benh_feed_inline").onchange = function() {
+      formWrap.querySelector("#benhFieldsFeedInline").style.display = this.value === "1" ? "block" : "none";
+    };
+  
+    // Xử lý submit form (tích hợp API backend thực)
+    formWrap.querySelector("#inlineFormFeed").onsubmit = async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const data = {};
+      for (const [k, v] of formData.entries()) data[k] = v ? parseFloat(v) || 0 : 0;
+      // Các trường đặc biệt:
+      data["sanluongca"] = (data["size_interp"] * data["soluongca"]) / 1000;
+      data["matdo"] = data["dien_tich"] > 0 ? data["soluongca"] / data["dien_tich"] : 0;
+      const so_ngay = parseInt(data["so_ngay_du_doan"] || 1);
+  
+      // Hiện Lottie thinking
+      const loader = document.createElement('div');
+      loader.innerHTML = document.getElementById('lottie-thinking').innerHTML +
+        "<span style='margin-left:10px;'>Đang dự đoán, vui lòng đợi...</span>";
+      loader.className = "mt-2";
+      formWrap.appendChild(loader);
+      this.querySelector("button[type=submit]").disabled = true;
+  
+      try {
+        // GỌI API BACKEND ĐÚNG ĐỊA CHỈ CỦA BẠN Ở ĐÂY:
+        // Sửa lại domain cho đúng nếu cần!
+        const res = await fetch("/thucan/predict_feed/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error("API lỗi hoặc không trả về dữ liệu hợp lệ!");
+        const result = await res.json();
+        loader.remove();
+  
+        let resHtml = `<div class="form-result">`;
+        if (result.error) {
+          resHtml += `<div class="alert alert-danger">${result.error}</div>`;
+        } else if (result.message) {
+          resHtml += `<div class="alert alert-warning">${result.message}</div>`;
+        } else if (result.du_doan_nhieu_ngay && so_ngay > 1) {
+          // Kết quả cho nhiều ngày (table)
+          resHtml += `<h5 class="mb-2">Kết quả dự đoán cho nhiều ngày</h5>
+          <div class="table-responsive"><table class="table table-bordered align-middle table-sm"><thead>
+          <tr>
+            <th>Ngày</th><th>Tuổi cá</th><th>Size</th><th>Số lượng cá</th>
+            <th>Mật độ</th><th>Sản lượng cá</th><th>Tỉ lệ hao hụt (%)</th>
+            <th>Loại cho ăn</th><th>Loại thức ăn</th>
+            <th>Sáng (kg)</th><th>Chiều (kg)</th><th>Tổng (kg)</th>
+          </tr></thead><tbody>`;
+          result.du_doan_nhieu_ngay.forEach(row => {
+            resHtml += `<tr>
+              <td>${row.ngay}</td>
+              <td>${row.tuoi}</td>
+              <td>${row.size ? row.size.toFixed(2) : ""}</td>
+              <td>${row.soluongca ? Math.round(row.soluongca) : ""}</td>
+              <td>${row.matdo ? row.matdo.toFixed(2) : ""}</td>
+              <td>${row.sanluongca ? row.sanluongca.toFixed(2) : ""}</td>
+              <td>${row.tile_hao_hut !== undefined ? row.tile_hao_hut.toFixed(2) : ""}</td>
+              <td>${row.loai_cho_an ?? ""}</td>
+              <td>${row.loai_thuc_an ?? ""}</td>
+              <td>${row.sang !== undefined ? row.sang : ""}</td>
+              <td>${row.chieu !== undefined ? row.chieu : ""}</td>
+              <td>${row.tong !== undefined ? row.tong : ((row.sang || 0) + (row.chieu || 0)).toFixed(2)}</td>
+            </tr>`;
+          });
+          resHtml += "</tbody></table></div>";
+        } else {
+          // Kết quả 1 ngày
+          resHtml += `<h5>Loại cho ăn: ${result.loai_cho_an}</h5>`;
+          if (result.loai_thuc_an)
+            resHtml += `<p><strong>Loại thức ăn đề xuất:</strong> ${result.loai_thuc_an}</p>`;
+          if (result.sang) resHtml += `<p>Sáng: ${result.sang} kg</p>`;
+          if (result.chieu) resHtml += `<p>Chiều: ${result.chieu} kg</p>`;
+          if (result.tong) resHtml += `<p><strong>Tổng: ${result.tong} kg</strong></p>`;
+        }
+        resHtml += `</div>`;
+        formWrap.querySelector(".inline-form").insertAdjacentHTML("beforeend", resHtml);
+      } catch (err) {
+        loader.remove();
+        let errHtml = `<div class="form-result text-danger"><b>Lỗi:</b> Không thể dự đoán. ${err.message}</div>`;
+        formWrap.querySelector(".inline-form").insertAdjacentHTML("beforeend", errHtml);
+      }
+    };
+  }
+  
+  // --------- FORM THAY NƯỚC như cũ ---------
+  function renderInlineThayNuocForm() {
+    // ... giữ nguyên như phần đã gửi ở các đoạn trước ...
+  }
+  
+  // ---- Xử lý nhập chat ----
+  document.getElementById('sendBtn').onclick = sendInput;
+  document.getElementById('userInput').onkeypress = function(e) {
+    if (e.key === "Enter") sendInput();
+  };
+  function sendInput() {
+    const inp = document.getElementById('userInput');
+    let val = inp.value.trim();
+    if (!val) return;
+    userSay(val);
+    inp.value = '';
+    if (val.match(/(thay nước|water)/i)) selectModule('thaynuoc');
+    else if (val.match(/(cho ăn|feed)/i)) selectModule('feed');
+    else if (val.match(/(dịch bệnh|bệnh)/i)) selectModule('dichbenh');
+    else botShowMenu();
+  }
+  window.onload = () => {
+    botSay("Xin chào! Tôi là <b>trợ lý thủy sản thông minh</b>. Bạn muốn thực hiện chức năng nào?");
+    botShowMenu();
+  };
+  </script>
+</body>
+</html>

@@ -14,7 +14,7 @@ templates = Jinja2Templates(directory="app/templates")
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 # Load models
-model_forest_phanloai = joblib.load("app/api_thay_nuoc/model_forest_phanloai.pkl")
+model_forest_phanloai = joblib.load("app/api_thay_nuoc/model_xgb_phanloai.pkl")
 model_forest_biendo = joblib.load("app/api_thay_nuoc/model_forest_biendo.pkl")
 model_forest_biendo2 = joblib.load("app/api_thay_nuoc/model_forest_biendo2.pkl")
 model_gio = joblib.load("app/api_thay_nuoc/model_gio.pkl")
@@ -24,13 +24,12 @@ class FishInput(BaseModel):
     size: int
     thuocnuoc: float
     tuoi: int
-    tong_food: int
+    
     bi_benh: int  # 0 hoặc 1
     xx: int = 0
     xh: int = 0
     gtm: int = 0
     tgtm: int = 0
-    loaithucan: int = 0  # default nếu không có chọn
 
 
 @router.post("/predict/")
@@ -46,7 +45,7 @@ def predict_water_change(data: FishInput):
         tgtm = data.tgtm
 
     # Model phân loại
-    X_input = np.array([[data.size, data.tuoi, data.tong_food, ck, gtm, tgtm, xh, xx]])
+    X_input = np.array([[data.size, data.tuoi,ck, gtm, tgtm, xh, xx]])
     prediction = model_forest_phanloai.predict(X_input)[0]
 
     label_map = {0: "Không thay nước", 1: "Thay nước đợt 1", 2: "Thay nước 2 đợt"}
@@ -68,8 +67,8 @@ def predict_water_change(data: FishInput):
             "ty_le_thay": ty_le
         }
     
-    def du_doan_buoi_thay(size, tuoi, tong_food, ck, gtm, tgtm, xh, xx, loaithucan):
-        features = np.array([[size, tuoi, loaithucan, tong_food, ck, gtm, tgtm, xh, xx]])
+    def du_doan_buoi_thay(size, tuoi, ck, gtm, tgtm, xh, xx):
+        features = np.array([[size, tuoi,  ck, gtm, tgtm, xh, xx]])
         gio_pred = model_gio.predict(features)[0]
 
         label_map = {
@@ -86,16 +85,16 @@ def predict_water_change(data: FishInput):
     if prediction == 1:
         features = [data.size, data.thuocnuoc, data.tuoi, ck, gtm, tgtm, xh, xx]
         result["bien_do"].append(du_doan_biendo(model_forest_biendo, features))
-        gio = du_doan_buoi_thay(data.size, data.tuoi, data.tong_food, ck, gtm, tgtm, xh, xx, data.loaithucan)
+        gio = du_doan_buoi_thay(data.size, data.tuoi, ck, gtm, tgtm, xh, xx)
         result["gio"] = [f"Thay nước buổi {gio}"]
 
     elif prediction == 2:
         features1 = [data.size, data.thuocnuoc, data.tuoi, ck, gtm, tgtm, xh, xx]
-        features2 = [data.size, data.thuocnuoc, data.tuoi, xh, xx]
+        features2 = [data.size, data.thuocnuoc, data.tuoi, ck, gtm, tgtm, xh, xx]
         result["bien_do"].append(du_doan_biendo(model_forest_biendo, features1, dot="đợt 1"))
         result["bien_do"].append(du_doan_biendo(model_forest_biendo2, features2, dot="đợt 2"))
         # Đợt 1: dự đoán
-        gio1 = du_doan_buoi_thay(data.size, data.tuoi, data.tong_food, ck, gtm, tgtm, xh, xx, data.loaithucan)
+        gio1 = du_doan_buoi_thay(data.size, data.tuoi, ck, gtm, tgtm, xh, xx)
         if gio1 == 2:
             result["gio"] = [f"Đợt 1: buổi sáng", "Đợt 2: buổi tối"]
         else:

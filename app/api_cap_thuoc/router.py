@@ -7,9 +7,12 @@ import joblib
 router = APIRouter()
 
 # Load models and assets
-features_cols = joblib.load("app/api_cap_thuoc/features_cols.pkl")
+features_cols = [
+    'tuoi', 'matdo', 'tile_hao_hut', 'size', 'xh', 'gtm', 'tgtm', 'sanluongca'
+]
+
 drug_classifier = joblib.load("app/api_cap_thuoc/drug_classifier_lgbm.pkl")
-optimal_thresholds = joblib.load("app/api_cap_thuoc/optimal_thresholds_lgbm.pkl")
+optimal_thresholds = joblib.load("app/api_cap_thuoc/best_thresholds.pkl")
 label_names = joblib.load("app/api_cap_thuoc/labels_to_keep.pkl")
 
 # Rule maps
@@ -34,19 +37,19 @@ size_note_map = {
 }
 
 lieu_luong_map = {
-    'antistress':      lambda sanluong: f"Gợi ý liều lượng: {sanluong/20000:.2f} – {sanluong/15000:.2f} kg/ngày cho {sanluong:,} kg cá (theo 1 kg/15-20 tấn cá/ngày)",
-    'c40%':            lambda sanluong: f"Gợi ý liều lượng: {sanluong/50000:.2f} – {sanluong/40000:.2f} kg/ngày cho {sanluong:,} kg cá (theo 1 kg/40-50 tấn cá/ngày)",
-    'cefo':            lambda sanluong: f"Gợi ý liều lượng: {sanluong/100000:.2f} – {sanluong/80000:.2f} kg/ngày cho {sanluong:,} kg cá (theo 1 kg/80-100 tấn cá/ngày)",
-    'glucan':          lambda sanluong: f"Gợi ý liều lượng: {sanluong/20000:.2f} – {sanluong/15000:.2f} kg/ngày cho {sanluong:,} kg cá (theo 1 kg/15-20 tấn cá/ngày)",
-    'hepasol':         lambda sanluong: f"Gợi ý liều lượng: {sanluong/20000:.2f} – {sanluong/15000:.2f} kg/ngày cho {sanluong:,} kg cá (theo 1 kg/15-20 tấn cá/ngày)",
-    'levo':            lambda sanluong: f"Gợi ý liều lượng: {sanluong/100000:.2f} – {sanluong/80000:.2f} kg/ngày cho {sanluong:,} kg cá (theo 1 kg/80-100 tấn cá/ngày)",
-    'liver red':       lambda sanluong: f"Gợi ý liều lượng: {sanluong/15000:.2f} – {sanluong/10000:.2f} lít/ngày cho {sanluong:,} kg cá (theo 1 lít/10-15 tấn cá/ngày)",
-    'parasitol':       lambda sanluong: f"Gợi ý liều lượng: {sanluong/30000:.2f} – {sanluong/25000:.2f} kg/ngày cho {sanluong:,} kg cá (theo 1 kg/25-30 tấn cá/ngày)",
-    'premix':          lambda sanluong: f"Gợi ý liều lượng: {sanluong/30000:.2f} – {sanluong/20000:.2f} kg/ngày cho {sanluong:,} kg cá (theo 1 kg/20-30 tấn cá/ngày)",
-    'prozyme':         lambda sanluong: f"Gợi ý liều lượng: {sanluong/1000:.2f} – {sanluong/500:.2f} kg/ngày cho {sanluong:,} kg cá (theo 1 kg/500-1000 kg cá/ngày)",
-    's.zyme':          lambda sanluong: f"Gợi ý liều lượng: {sanluong/1000:.2f} – {sanluong/500:.2f} kg/ngày cho {sanluong:,} kg cá (theo 1 kg/500-1000 kg cá/ngày)",
+    'antistress':      lambda sanluong: f"Gợi ý liều lượng: {sanluong/20000:.2f} – {sanluong/15000:.2f} kg/ngày cho {int(sanluong):,} kg cá (theo 1 kg/15-20 tấn cá/ngày)",
+    'c40%':            lambda sanluong: f"Gợi ý liều lượng: {sanluong/50000:.2f} – {sanluong/40000:.2f} kg/ngày cho {int(sanluong):,} kg cá (theo 1 kg/40-50 tấn cá/ngày)",
+    'cefo':            lambda sanluong: f"Gợi ý liều lượng: {sanluong/100000:.2f} – {sanluong/80000:.2f} kg/ngày cho {int(sanluong):,} kg cá (theo 1 kg/80-100 tấn cá/ngày)",
+    'glucan':          lambda sanluong: f"Gợi ý liều lượng: {sanluong/20000:.2f} – {sanluong/15000:.2f} kg/ngày cho {int(sanluong):,} kg cá (theo 1 kg/15-20 tấn cá/ngày)",
+    'hepasol':         lambda sanluong: f"Gợi ý liều lượng: {sanluong/20000:.2f} – {sanluong/15000:.2f} kg/ngày cho {int(sanluong):,} kg cá (theo 1 kg/15-20 tấn cá/ngày)",
+    'levo':            lambda sanluong: f"Gợi ý liều lượng: {sanluong/100000:.2f} – {sanluong/80000:.2f} kg/ngày cho {int(sanluong):,} kg cá (theo 1 kg/80-100 tấn cá/ngày)",
+    'liver red':       lambda sanluong: f"Gợi ý liều lượng: {sanluong/15000:.2f} – {sanluong/10000:.2f} lít/ngày cho {int(sanluong):,} kg cá (theo 1 lít/10-15 tấn cá/ngày)",
+    'parasitol':       lambda sanluong: f"Gợi ý liều lượng: {sanluong/30000:.2f} – {sanluong/25000:.2f} kg/ngày cho {int(sanluong):,} kg cá (theo 1 kg/25-30 tấn cá/ngày)",
+    'premix':          lambda sanluong: f"Gợi ý liều lượng: {sanluong/30000:.2f} – {sanluong/20000:.2f} kg/ngày cho {int(sanluong):,} kg cá (theo 1 kg/20-30 tấn cá/ngày)",
+    'prozyme':         lambda sanluong: f"Gợi ý liều lượng: {sanluong/1000:.2f} – {sanluong/500:.2f} kg/ngày cho {int(sanluong):,} kg cá (theo 1 kg/500-1000 kg cá/ngày)",
+    's.zyme':          lambda sanluong: f"Gợi ý liều lượng: {sanluong/1000:.2f} – {sanluong/500:.2f} kg/ngày cho {int(sanluong):,} kg cá (theo 1 kg/500-1000 kg cá/ngày)",
     'sorpherol':       lambda sanluong: f"{sanluong/20000:.2f} kg/20 tấn cá/ngày",
-    'vimax':           lambda sanluong: f"Gợi ý liều lượng: {sanluong/45000:.2f} – {sanluong/40000:.2f} lít/ngày cho {sanluong:,} kg cá (theo 1 lít/40-45 tấn cá/ngày)",
+    'vimax':           lambda sanluong: f"Gợi ý liều lượng: {sanluong/45000:.2f} – {sanluong/40000:.2f} lít/ngày cho {int(sanluong):,} kg cá (theo 1 lít/40-45 tấn cá/ngày)",
     'yucca':           None
 }
 
@@ -55,15 +58,11 @@ class FishInput(BaseModel):
     tuoi: int
     matdo: float
     tile_hao_hut: float
-    loai_xl: int
     size: int
     xh: int
-    xx: int
-    ck: int
     gtm: int
     tgtm: int
-    tong_food_ngay: float
-    sanluong_kg: int
+    sanluong_kg: float
     the_tich: float = 0
 
 def calculate_yucca_dosage(sanluong, thetich_nuoc):

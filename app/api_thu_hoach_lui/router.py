@@ -27,7 +27,6 @@ class HarvestInput(BaseModel):
     xx: int = 0
     target_size: float = 1400  # default
 
-
 @router.post("/predict_thu_hoach_lui/")
 def predict_harvest_delay(data: HarvestInput):
     try:

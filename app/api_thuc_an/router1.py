@@ -188,7 +188,7 @@ def predict_feed(data: FishFeedInput):
 
         # Lượng cho ăn (nếu muốn, giữ nguyên logic cũ)
         feed_info = {}
-        if loai_cho_an == 1:
+        if loai_cho_an == 0:
             x_2buoi = build_input_vector(
                 model_2buoi,
                 {**state, "size": next_size, "soluongca": next_soluongca, "matdo": next_matdo, "sanluongca": next_sanluongca, "tile_hao_hut": tile_hao_hut_luy_ke},
@@ -200,7 +200,7 @@ def predict_feed(data: FishFeedInput):
                 "chieu": round(food_chieu, 2),
                 "tong": round(food_sang + food_chieu, 2)
             }
-        elif loai_cho_an == 2:
+        elif loai_cho_an == 1:
             x_sang = build_input_vector(
                 model_sang,
                 {**state, "size": next_size, "soluongca": next_soluongca, "matdo": next_matdo, "sanluongca": next_sanluongca, "tile_hao_hut": tile_hao_hut_luy_ke},
@@ -208,7 +208,7 @@ def predict_feed(data: FishFeedInput):
             )
             food = model_sang.predict(x_sang)[0]
             feed_info = {"sang": round(food, 2)}
-        elif loai_cho_an == 3:
+        elif loai_cho_an == 2:
             x_chieu = build_input_vector(
                 model_chieu,
                 {**state, "size": next_size, "soluongca": next_soluongca, "matdo": next_matdo, "sanluongca": next_sanluongca, "tile_hao_hut": tile_hao_hut_luy_ke},
@@ -242,7 +242,7 @@ def predict_feed(data: FishFeedInput):
 
     try:
         # Dự đoán nhãn
-        y_pred_new = model_loai_thuc_an.predict(X_class)
+        y_pred_new = model_loai_thuc_an.predict(feature_vector)
         # Giải mã tên loại
         predicted_label = label_encoders['loaithucan'].inverse_transform(y_pred_new)[0]
         result["loai_thuc_an"] = predicted_label
